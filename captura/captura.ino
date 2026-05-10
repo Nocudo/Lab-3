@@ -1,7 +1,7 @@
 const int NUM_MUESTRAS = 1000; 
 const int CANTIDAD_PERIODOS = 2;
 const float FRECUENCIA_SENAL = 10.0;
-const double MICROSEG_IN_SEG = 1000000; 
+const double MICROSEG_IN_SEG = 1000000.0; 
 
 const int pinADC1 = 34;
 const int pinADC2 = 35;
@@ -47,11 +47,11 @@ void loop() {
         float va = -2.0 * (va_leido - 1.5);
         float vb = -2.0 * (vb_leido - 1.5);
         
-        Serial.print(tiempo);
+        Serial.print(tiempo,6);
         Serial.print(",");
-        Serial.print(va);
+        Serial.print(va,6);
         Serial.print(",");
-        Serial.println(vb);
+        Serial.println(vb,6);
       }
     }
   }
