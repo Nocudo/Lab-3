@@ -53,8 +53,12 @@ def limpiar(directorio, col_t_1=0, col_y_1=1, col_y_2=2):
 
 def obtener_datos(nombre_archivo, v_offset, v_ventana, col_t=0, col_va=1, col_vb=2):
     df: DataFrame = limpiar(f"{nombre_archivo}{EXTENSION}", col_t_1=col_t, col_y_1=col_va, col_y_2=col_vb)
-    li = df.iloc[:, col_vb].max() - v_ventana
-    return df.iloc[:, col_t], df.iloc[:, col_va], df.iloc[:, col_vb] + v_offset, li
+    li = None
+    ls = None
+    if v_ventana is not None:
+        ls = df.iloc[:, col_vb].max()
+        li = ls - v_ventana
+    return df.iloc[:, col_t], df.iloc[:, col_va], df.iloc[:, col_vb] + v_offset, li, ls
 
 def filtrar_datos(x, y, li=None, ls=None):
     mascara = Series([True] * len(y), index=y.index)
@@ -163,7 +167,7 @@ def graficar_etas(temperaturas, etas, nombres_puntos):
     graficar_columnas(
         x=[temperaturas],
         y=[etas],
-        tit="Factor de idealidad vs Longitud de onda",
+        tit="Factor de idealidad vs Temperatura",
         nom_x="Temperatura (°K)",
         nom_y="Factor de idealidad (n)",
         label=["n"],
@@ -176,7 +180,7 @@ def graficar_regresiones(x, y, label):
     graficar_columnas(
         x=x,
         y=y,
-        tit=label,
+        tit="Curvas de corriente del Rectificador a cada temperatura",
         nom_x="Voltaje (V)",
         nom_y="Corriente (A)",
         label=label
@@ -187,19 +191,17 @@ def eta(a, c, q, k, temp, res, directorio_eta, offset, v_ventana):
     etas_dict = {}
     for nombre in nombres_archivos_eta:
         ruta_archivo = directorio_eta / nombre
-        t, v_a, v_b, li = obtener_datos(ruta_archivo, offset, v_ventana[nombre])
+        color_led = nombre.split(".")[0]
+        t, v_a, v_b, li, ls = obtener_datos(ruta_archivo, offset, v_ventana)
+        graficar_voltajes(t, v_a, v_b, f"Rectificador a {color_led}")
         i = (v_a - v_b) / res
-        filt_i, filt_v_b = filtrar_datos(i, v_b, li=li)
+        graficar_corriente(v_b, i, f"Rectificador a {color_led}")
+        filt_i, filt_v_b = filtrar_datos(i, v_b, li=li, ls=ls)
         v_umbral, i_promedio, i_std = valores_representativos(filt_v_b, filt_i)
         (v_fit_e, i_fit_e), b_e, = regresion_emergencial(v_umbral, i_promedio, a, c, i_std)
         (v_fit_ne, i_fit_ne), (a_ne, b_ne, c_ne), (_, b_std, _)= regresion_no_emergencial(v_umbral, i_promedio, a, b_e, c, i_std)
         ec_fit_e = f"I = {a:.2e} (exp({b_e:.2e} V) - 1) + {c:.2e}"
         ec_fit_ne = f"I = {a_ne:.2e} (exp({b_ne:.2e} V) - 1) + {c_ne:.2e}"
-        eta = q / (k * temp * b_ne)
-        color_led = nombre.split(".")[0]
-        etas_dict.update({color_led: (eta, b_ne, b_std, ec_fit_ne)})
-        graficar_voltajes(t, v_a, v_b, f"Rectificador a {color_led}")
-        graficar_corriente(v_b, i, f"Rectificador a {color_led}")
         graficar_regresion(
             [v_umbral, v_fit_e, v_fit_ne],
             [i_promedio, i_fit_e, i_fit_ne],
@@ -207,6 +209,8 @@ def eta(a, c, q, k, temp, res, directorio_eta, offset, v_ventana):
             [ec_fit_e, ec_fit_ne],
             f"Rectificador a {color_led}",
         )
+        eta = q / (k * temp * b_ne)
+        etas_dict.update({color_led: (eta, b_ne, b_std, ec_fit_ne)})
     return etas_dict
 
 def temperatura(a, c, q, k, eta, res, directorio_temp, offset, v_ventana):
@@ -214,9 +218,9 @@ def temperatura(a, c, q, k, eta, res, directorio_temp, offset, v_ventana):
     temp_dict = {}
     for nombre in nombres_archivos_eta:
         ruta_archivo = directorio_temp / nombre
-        _, v_a, v_b, li = obtener_datos(ruta_archivo, offset, v_ventana[nombre])
+        _, v_a, v_b, li, ls = obtener_datos(ruta_archivo, offset, v_ventana)
         i = (v_a - v_b) / res
-        filt_i, filt_v_b = filtrar_datos(i, v_b, li=li)
+        filt_i, filt_v_b = filtrar_datos(i, v_b, li=li, ls=ls)
         v_umbral, i_promedio, i_std = valores_representativos(filt_v_b, filt_i)
         _, b_e, = regresion_emergencial(v_umbral, i_promedio, a, c, i_std)
         (v_fit_ne, i_fit_ne), (a_ne, b_ne, c_ne), (_, b_std, _)= regresion_no_emergencial(v_umbral, i_promedio, a, b_e, c, i_std)
@@ -232,36 +236,24 @@ if __name__ == "__main__":
     c = 4.4e-4              # Componente dc
     q = 1.602176634e-19     # Carga elemental del electron
     k = 1.380649e-23        # Constante de Boltzmann
-    temp = 298.15           # Temperatura en Kelvin
     res = 217.0             # Resistencia
-    offset = 1.7            # Offset para evitar corriente negativa 
-    voltajes_ventana = {    # Voltajes para filtrar datos
-        "25°C": -0.7,
-        "50°C": -0.7,
-        "70°C": -0.7,
-        "90°C": -0.7
-    }
+    offset = -0.2           # Offset para evitar corriente negativa 
+    voltajes_ventana = 1.0  # Voltajes para filtrar datos
     temperaturas_kelvin = { 
         "25°C": 298.15,
         "50°C": 323.15,
         "70°C": 343.15,
         "90°C": 363.15
     }
-    voltajes_lm_35 = {
-        "25°C": 0.252,
-        "50°C": 0.497,
-        "70°C": 0.704,
-        "90°C": 0.895
-    }
-    label_temp = "25°C"
+    label_temp_ambiente = "25°C"
     directorio_eta = Path("./datos_eta")
     directorio_temp = Path("./datos_temp")
-
-    etas_dict = eta(a, c, q, k, temp, res, directorio_eta, offset, voltajes_ventana)
-    temperatura_ambiente = etas_dict[label_temp][0]
+    etas_dict = eta(a, c, q, k, temperaturas_kelvin[label_temp_ambiente], res, directorio_eta, offset, voltajes_ventana)
+    temperatura_ambiente = etas_dict[label_temp_ambiente][0]
     temps_dict = temperatura(a, c, q, k, temperatura_ambiente, res, directorio_temp, offset, voltajes_ventana)
-
-    graficar_etas([temperaturas_kelvin[label_temp]], [etas_dict[label_temp][0]], [f"({label_temp}, {temperatura_ambiente:.4f})"])
+    graficar_etas([temperaturas_kelvin[label_temp_ambiente]], 
+                  [etas_dict[label_temp_ambiente][0]], 
+                  [f"({label_temp_ambiente}, {temperatura_ambiente:.4f})"])
     x, y, label = [], [], []
     for key in temps_dict.keys():
         x_, y_, label_ = temps_dict[key][1]
