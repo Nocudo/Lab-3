@@ -24,6 +24,16 @@ def filtrar_extension(directorio, extension = EXTENSION):
         print(f"Error: {e}")
         exit(1)
 
+def leer(directorio, skiprows=0, header=None):
+    try:
+        return read_csv(directorio, skiprows=skiprows, header=header)
+    except FileNotFoundError:
+        print(f"Error: El archivo '{directorio}' no fue encontrado.")
+        return DataFrame()
+    except Exception as e:
+        print(f"Ocurrio un error al leer el archivo CSV: {e}")
+        return DataFrame()
+    
 def limpiar(directorio, col_t_1=0, col_y_1=1, col_y_2=2):
     try:
         df = leer(directorio)
@@ -41,15 +51,18 @@ def limpiar(directorio, col_t_1=0, col_y_1=1, col_y_2=2):
         print(f"Error: {e}")
         exit(1)
 
-def leer(directorio, skiprows=0, header=None):
-    try:
-        return read_csv(directorio, skiprows=skiprows, header=header)
-    except FileNotFoundError:
-        print(f"Error: El archivo '{directorio}' no fue encontrado.")
-        return DataFrame()
-    except Exception as e:
-        print(f"Ocurrio un error al leer el archivo CSV: {e}")
-        return DataFrame()
+def obtener_datos(nombre_archivo, v_offset, v_ventana, col_t=0, col_va=1, col_vb=2):
+    df: DataFrame = limpiar(f"{nombre_archivo}{EXTENSION}", col_t_1=col_t, col_y_1=col_va, col_y_2=col_vb)
+    li = df.iloc[:, col_vb].max() - v_ventana
+    return df.iloc[:, col_t], df.iloc[:, col_va], df.iloc[:, col_vb] + v_offset, li
+
+def filtrar_datos(x, y, li=None, ls=None):
+    mascara = Series([True] * len(y), index=y.index)
+    if li is not None:
+        mascara &= (y >= li)
+    if ls is not None:
+        mascara &= (y <= ls)
+    return x[mascara], y[mascara]
 
 def valores_representativos(x, y, num_valores=20):
     x_i = x.min()
@@ -67,13 +80,6 @@ def valores_representativos(x, y, num_valores=20):
             y_std.append(std_val if std_val > 0 else 1e-6)
     return array(x_umbral), array(y_promedio), array(y_std)
 
-def regresion_no_emergencial(x, y, a, b, c, y_std=None, resolucion_regresion=1000):
-    def modelo(x, a, b, c):
-        return a * (exp(clip(b * x, -700, 700)) - 1) + c
-    x_fit = linspace(x.min(), x.max(), resolucion_regresion)
-    (a_, b_, c_), pcov = curve_fit(modelo, x, y, [a, b, c], y_std, True, method="lm")
-    return ([x_fit, modelo(x_fit, a_, b_, c_)], [a_, b_, c_], sqrt(diag(pcov)))
-
 def regresion_emergencial(x, y, a, c, y_std=None, resolucion_regresion=1000):
     x_fit = linspace(x.min(), x.max(), resolucion_regresion)
     y_log = log(((y - c) / a) + 1)
@@ -83,6 +89,13 @@ def regresion_emergencial(x, y, a, c, y_std=None, resolucion_regresion=1000):
     b = lstsq(x_w, y_w, rcond=None)[0][0]
     y_fit = a * (exp(b * x_fit) - 1) + c
     return ([x_fit, y_fit], b)
+
+def regresion_no_emergencial(x, y, a, b, c, y_std=None, resolucion_regresion=1000):
+    def modelo(x, a, b, c):
+        return a * (exp(clip(b * x, -700, 700)) - 1) + c
+    x_fit = linspace(x.min(), x.max(), resolucion_regresion)
+    (a_, b_, c_), pcov = curve_fit(modelo, x, y, [a, b, c], y_std, True, method="lm")
+    return ([x_fit, modelo(x_fit, a_, b_, c_)], [a_, b_, c_], sqrt(diag(pcov)))
 
 def graficar_columnas(x, y, tit, nom_x, nom_y, label, markersize=0.1, fmt="-", alpha=1.0, yerr=None, names=None):
     figure(figsize=(10, 5))
@@ -110,29 +123,6 @@ def graficar_columnas(x, y, tit, nom_x, nom_y, label, markersize=0.1, fmt="-", a
     legend()
     grid()
     show()
-
-def graficar_regresiones(x, y, label):
-    graficar_columnas(
-        x=x,
-        y=y,
-        tit=label,
-        nom_x="Voltaje (V)",
-        nom_y="Corriente (A)",
-        label=label
-    )
-
-def graficar_etas(temperaturas, etas, nombres_puntos):
-    graficar_columnas(
-        x=[temperaturas],
-        y=[etas],
-        tit="Factor de idealidad vs Longitud de onda",
-        nom_x="Temperatura (°K)",
-        nom_y="Factor de idealidad (n)",
-        label=["n"],
-        markersize=3,
-        fmt="-o",
-        names=[nombres_puntos]
-    )
 
 def graficar_voltajes(t, v_a, v_b, nombre):
     graficar_columnas(
@@ -169,18 +159,28 @@ def graficar_regresion(x, y, std, ec_fit, nombre):
         yerr=std
     )
 
-def filtrar_datos(x, y, li=None, ls=None):
-    mascara = Series([True] * len(y), index=y.index)
-    if li is not None:
-        mascara &= (y >= li)
-    if ls is not None:
-        mascara &= (y <= ls)
-    return x[mascara], y[mascara]
+def graficar_etas(temperaturas, etas, nombres_puntos):
+    graficar_columnas(
+        x=[temperaturas],
+        y=[etas],
+        tit="Factor de idealidad vs Longitud de onda",
+        nom_x="Temperatura (°K)",
+        nom_y="Factor de idealidad (n)",
+        label=["n"],
+        markersize=3,
+        fmt="-o",
+        names=[nombres_puntos]
+    )
 
-def obtener_datos(nombre_archivo, v_offset, v_ventana):
-    df: DataFrame = limpiar(f"{nombre_archivo}{EXTENSION}")
-    li = df.iloc[:, 2].max() - v_ventana
-    return df.iloc[:, 0], df.iloc[:, 1], df.iloc[:, 2] + v_offset, li
+def graficar_regresiones(x, y, label):
+    graficar_columnas(
+        x=x,
+        y=y,
+        tit=label,
+        nom_x="Voltaje (V)",
+        nom_y="Corriente (A)",
+        label=label
+    )
 
 def eta(a, c, q, k, temp, res, directorio_eta, offset, v_ventana):
     nombres_archivos_eta = filtrar_extension(directorio_eta)
