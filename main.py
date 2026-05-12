@@ -298,13 +298,13 @@ if __name__ == "__main__":
         for key in etas_dict.keys():
             n, b, std_b, ec = etas_dict[key]
             std_b = std_b * n / b
-            text = f"Rectificador a {key.upper()}:\neta:\n\t{n}\nincertidumbre eta (+/-):\n\tb: {std_b}\necuacion:\n\t{ec}\n"
+            text = f"Rectificador a {key.upper()}:\neta:\n\t{n}\nincertidumbre eta (+/-):\n\t{std_b}\necuacion:\n\t{ec}\n"
             print(text)
             archivo.write(text)
         print("TEMPERATURAS DEL DIODO:".center(53, "="))
         for key in temps_dict.keys():
             temp, temp_c, b, std_b, ec = temps_dict[key][0]
             std_b = abs(std_b * temp / b)
-            text = f"Rectificador a {key.upper()}:\ntemperatura:\n\t{temp} °K\n\t{temp_c} °C\nincertidumbre temperatura (+/-):\n\tb: {std_b}\necuacion:\n\t{ec}\n"
+            text = f"Rectificador a {key.upper()}:\ntemperatura:\n\t{temp} °K\n\t{temp_c} °C\nincertidumbre temperatura (+/-):\n\t{std_b}\necuacion:\n\t{ec}\n"
             print(text)
             archivo.write(text)
