@@ -1,0 +1,39 @@
+Rectificador a 26°C:
+eta:
+	2.1381765527479084
+incertidumbre eta (+/-):
+	b: 0.24691623993378328
+ecuacion:
+	I = 5.70e-10 (exp(1.81e+01 V) - 1) + 2.26e-04
+Rectificador a 100°C:
+temperatura:
+	379.80601791570615 °K
+	106.65601791570617 °C
+incertidumbre temperatura (+/-):
+	b: 45.479629275072824
+ecuacion:
+	I = 3.62e-08 (exp(1.43e+01 V) - 1) + 2.19e-04
+Rectificador a 26°C:
+temperatura:
+	299.1499999999999 °K
+	25.999999999999943 °C
+incertidumbre temperatura (+/-):
+	b: 34.545787662512055
+ecuacion:
+	I = 5.70e-10 (exp(1.81e+01 V) - 1) + 2.26e-04
+Rectificador a 40°C:
+temperatura:
+	309.6498304905478 °K
+	36.49983049054782 °C
+incertidumbre temperatura (+/-):
+	b: 41.09900042926847
+ecuacion:
+	I = 1.27e-09 (exp(1.75e+01 V) - 1) + 2.24e-04
+Rectificador a 90°C:
+temperatura:
+	362.4499411851668 °K
+	89.2999411851668 °C
+incertidumbre temperatura (+/-):
+	b: 55.9800918725285
+ecuacion:
+	I = 2.04e-08 (exp(1.50e+01 V) - 1) + 2.16e-04

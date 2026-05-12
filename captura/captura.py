@@ -2,8 +2,8 @@ import serial
 import csv
 import time
 
-nombre_archivo = "25°C.CSV"
-muestras_esperadas = 1000
+nombre_archivo = "captura.CSV"
+muestras_esperadas = 5000
 
 ser = serial.Serial('COM3', 921600, timeout=1)
 time.sleep(2)

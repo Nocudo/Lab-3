@@ -1,10 +1,10 @@
-const int NUM_MUESTRAS = 1000; 
+const int NUM_MUESTRAS = 5000; 
 const int CANTIDAD_PERIODOS = 2;
-const float FRECUENCIA_SENAL = 10.0;
+const float FRECUENCIA_SENAL = 1.0;
 const double MICROSEG_IN_SEG = 1000000.0; 
 
-const int pinADC1 = 34;
-const int pinADC2 = 35;
+const int pinADC1 = 34; //Va  
+const int pinADC2 = 35; //Vb
 
 unsigned long t_arr[NUM_MUESTRAS];
 uint16_t raw1_arr[NUM_MUESTRAS];
@@ -47,11 +47,11 @@ void loop() {
         float va = -2.0 * (va_leido - 1.5);
         float vb = -2.0 * (vb_leido - 1.5);
         
-        Serial.print(tiempo,6);
+        Serial.print(tiempo, 6);
         Serial.print(",");
-        Serial.print(va,6);
+        Serial.print(va, 6);
         Serial.print(",");
-        Serial.println(vb,6);
+        Serial.println(vb, 6);
       }
     }
   }
