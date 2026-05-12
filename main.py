@@ -205,8 +205,7 @@ def graficar_regresiones(x, y, label):
         tit="Curvas de corriente del Rectificador a cada temperatura",
         nom_x="Voltaje (V)",
         nom_y="Corriente (A)",
-        label=label,
-        names=label
+        label=label
     )
 
 
@@ -278,6 +277,7 @@ if __name__ == "__main__":
     label_temp_ambiente = "26°C"
     directorio_eta = Path("./datos_eta")
     directorio_temp = Path("./datos_temp")
+    directorio_resultados = Path("./resultados")
     etas_dict = eta(
         a, c, q, k, temperaturas_kelvin[label_temp_ambiente], res, directorio_eta, offset, voltajes_ventana)
     eta_temp_amb = etas_dict[label_temp_ambiente][0]
@@ -293,7 +293,7 @@ if __name__ == "__main__":
         y.append(y_)
         label.append(label_)
     graficar_regresiones(x, y, label)
-    with open("resultados.txt", "w", encoding="utf-8") as archivo:
+    with open(directorio_resultados / "resultados.txt", "w", encoding="utf-8") as archivo:
         print("ETA DEL DIODO:".center(53, "="))
         for key in etas_dict.keys():
             n, b, std_b, ec = etas_dict[key]
